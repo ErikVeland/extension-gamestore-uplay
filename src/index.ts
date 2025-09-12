@@ -1,4 +1,5 @@
-import * as Promise from 'bluebird';
+import * as Bluebird from 'bluebird';
+const Promise = Bluebird;
 
 import * as path from 'path';
 import * as winapi from 'winapi-bindings';
@@ -105,7 +106,7 @@ class UPlayLauncher implements types.IGameStore {
 
   public getGameStorePath(): Promise<string> {
     return (!!this.mClientPath)
-      ? this.mClientPath.then(basePath => path.join(basePath, 'Uplay.exe'))
+      ? this.mClientPath.then(basePath => Promise.resolve(path.join(basePath, 'Uplay.exe')))
       : Promise.resolve(undefined);
   }
 
@@ -150,8 +151,12 @@ class UPlayLauncher implements types.IGameStore {
 }
 
 function main(context: types.IExtensionContext) {
-  const instance: types.IGameStore =
-    process.platform === 'win32' ? new UPlayLauncher() : undefined;
+  // Only register on Windows where Uplay is supported
+  if (process.platform !== 'win32') {
+    return false;
+  }
+
+  const instance: types.IGameStore = new UPlayLauncher();
 
   if (instance !== undefined) {
     context.registerGameStore(instance);
